@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="nl">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="https://lucide.dev/icons/crown.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SchaakMat Vrienden</title>
+    
+    <!-- Styling: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -16,51 +17,101 @@
                 card: '#1e293b',
                 accent: '#3b82f6',
                 accentHover: '#2563eb',
-                text: '#f1f5f9',
-                muted: '#94a3b8'
               }
             }
           }
         }
       }
     </script>
+
+    <!-- Schaak Bibliotheken CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    
     <style>
-      body {
-        background-color: #0f172a;
-        color: #f1f5f9;
-        font-family: 'Inter', sans-serif;
-      }
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #1e293b; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #475569; 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #64748b; 
-      }
+        body { background-color: #0f172a; color: white; font-family: sans-serif; }
+        .hidden { display: none !important; }
+        /* Bord aanpassingen */
+        .board-container { margin: 0 auto; max-width: 500px; width: 100%; }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
-    "chess.js": "https://aistudiocdn.com/chess.js@^1.4.0",
-    "react-chessboard": "https://aistudiocdn.com/react-chessboard@^5.8.6",
-    "uuid": "https://aistudiocdn.com/uuid@^13.0.0"
-  }
-}
-</script>
 </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<body class="min-h-screen flex flex-col">
+
+    <!-- LOBBY SCHERM -->
+    <div id="lobby-screen" class="flex-1 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <!-- Decoratie achtergrond -->
+        <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 rounded-full blur-[100px] pointer-events-none"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/20 rounded-full blur-[100px] pointer-events-none"></div>
+
+        <div class="z-10 max-w-md w-full bg-slate-800/80 backdrop-blur-md border border-slate-700 p-8 rounded-2xl shadow-2xl text-center">
+            <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 mb-2">SchaakMat</h1>
+            <p class="text-slate-400 mb-8">Daag je vrienden uit voor een potje.</p>
+
+            <button id="btn-create" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg mb-6 flex items-center justify-center gap-2">
+                <span>Nieuw Spel Starten</span>
+            </button>
+
+            <div class="relative flex py-2 items-center mb-6">
+                <div class="flex-grow border-t border-slate-600"></div>
+                <span class="flex-shrink mx-4 text-slate-500 text-sm">OF DOE MEE</span>
+                <div class="flex-grow border-t border-slate-600"></div>
+            </div>
+
+            <div class="flex gap-2">
+                <input id="input-room-id" type="text" placeholder="Room ID (bijv. X7Y2Z)" class="flex-1 bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 text-center text-white font-mono uppercase outline-none focus:border-blue-500">
+                <button id="btn-join" class="bg-slate-700 hover:bg-slate-600 text-white px-6 rounded-xl font-bold">></button>
+            </div>
+            <p id="lobby-status" class="mt-4 text-sm text-yellow-400 min-h-[20px]"></p>
+        </div>
+    </div>
+
+    <!-- GAME SCHERM -->
+    <div id="game-screen" class="hidden flex-1 flex flex-col md:flex-row h-screen overflow-hidden">
+        
+        <!-- Header / Top Bar -->
+        <div class="md:hidden p-4 bg-slate-800 flex justify-between items-center border-b border-slate-700">
+            <button id="btn-leave-mobile" class="text-slate-400 hover:text-white">← Terug</button>
+            <span id="room-display-mobile" class="font-mono bg-slate-700 px-2 py-1 rounded text-xs">ID: ...</span>
+        </div>
+
+        <!-- Bord Sectie -->
+        <div class="flex-1 flex flex-col items-center justify-center p-4 bg-slate-900 overflow-y-auto">
+            <div class="w-full max-w-[600px] flex justify-between items-center mb-4 px-2">
+                <div class="flex items-center gap-2">
+                    <button id="btn-leave" class="hidden md:block text-slate-400 hover:text-white mr-2">← Verlaten</button>
+                    <span id="game-status" class="font-bold text-lg text-white">Wachten...</span>
+                </div>
+                <div id="room-display" class="hidden md:block font-mono bg-slate-800 px-3 py-1 rounded text-slate-300 border border-slate-700 cursor-pointer hover:bg-slate-700" title="Klik om te kopiëren">
+                    ID: ????
+                </div>
+            </div>
+
+            <!-- Het Bord -->
+            <div id="myBoard" class="w-full max-w-[500px] aspect-square shadow-2xl border-[4px] border-slate-700"></div>
+            
+            <div class="mt-4 text-center">
+                <p id="player-color-display" class="text-slate-400 text-sm">Je speelt als: <span class="font-bold text-white">...</span></p>
+            </div>
+        </div>
+
+        <!-- Chat / Sidebar -->
+        <div class="w-full md:w-80 bg-slate-800 border-l border-slate-700 flex flex-col h-[30vh] md:h-auto">
+            <div class="p-3 border-b border-slate-700 font-bold text-slate-300">Chat</div>
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-2 flex flex-col">
+                <!-- Berichten komen hier -->
+            </div>
+            <form id="chat-form" class="p-3 border-t border-slate-700 flex gap-2">
+                <input id="chat-input" type="text" placeholder="Typ iets..." class="flex-1 bg-slate-900 border border-slate-600 rounded px-2 py-2 text-sm text-white outline-none focus:border-blue-500">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-3 rounded">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts: jQuery, Chessboard.js, Chess.js -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    
+    <!-- Onze eigen logica -->
+    <script type="module" src="script.js"></script>
+</body>
 </html>
